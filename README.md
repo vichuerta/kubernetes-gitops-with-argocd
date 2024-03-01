@@ -406,3 +406,51 @@ statefulset.apps/argocd-application-controller   1/1     78m
 ```
 
 And here you can see, everything has the status "running". You're ready to use Argo CD.
+
+### Running the Argo CD web UI
+
+In order to be able to use the command line interface and the user interface for Argo CD, we need to expose the Argo CD API Server outside of the cluster. 
+
+So I'm going to patch the service that Argo CD has up and running on our cluster to expose its port and IP address outside of the cluster. 
+
+So I'm going to patch it to be of type **node port**, the type node port for that service will expose that service to external connections coming from outside of the cluster. 
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+service/argocd-server patched
+```
+
+The service will be available at the IP address of the specific node and the corresponding port. 
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n argocd get services                                               
+NAME                                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+...
+argocd-server                             NodePort    10.43.231.39    <none>        80:30650/TCP,443:32261/TCP   89m
+
+```
+
+So our Argo CD server now has IP type node port.
+
+
+
+In order to access the service for the Argo CD, the API server, I'm going to use port forwarding. 
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl port-forward svc/argocd-server -n argocd 8080:443
+Forwarding from 127.0.0.1:8080 -> 8080
+Forwarding from [::1]:8080 -> 8080
+```
+
+I'm going to expose this service onboard 80 80. 
+
+Once port forwarding has been set up, we should be able to access the Argo CD user interface at `localhost:8080` 
+
+Get secret and enter `admin` and secret for the `password` field
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" |
+ base64 -d && echo
+j1ijYUJ3fzlNL5C-
+```
+
+
