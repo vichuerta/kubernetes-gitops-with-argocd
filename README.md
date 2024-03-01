@@ -161,3 +161,38 @@ victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % cat ~/.kube/con
 - name: admin@k3d-argocd-cluster
 ```
 
+### Architectural overview
+
+Before we get hands-on with Argo CD, let's get a quick architectural overview of the various components that make up Argo CD and how they work together.
+
+Argo CD is made up of three main components:
+
+* **The API Server**
+
+	- responsible for application management and status reporting
+	- Argo CD manages infrastructure deployment using applications. All of the Argo CD applications operations such as **sync**, **rollback** and **any user-defined actions** that you set up are managed by the API server
+	- exposes gRPC APIs that clients can connect to
+	- such as Jenkins or some other automation tool
+	- manages the credentials for the repositories that you connect to. And any clusters that you connect to, to deploy apps.
+	- responsible for authentication and auth delegation to external identity providers. It follows role-based access control (RBAC) enforcement and also has the listener and forwarder for Git Webhook events.
+
+- **The Repository Service (Server)**
+
+	- manages the connections with Git repositories, which can be in our source of truth
+	- The repository service connects to git repositories to check what the desired state of the applications is. Git repositories, use Webhook Events to notify Argo CD, when new change are committed.
+	- internal service that maintains a local cache of the Git repository, holding the application manifest
+		- these manifests can be in the form of customized applications, helm charts, jsonnet files, Argo CD supports a number of different Kubernetes utilities
+
+- **The Application Controller**
+	- a Kubernetes controller, which syncs the desired state of the application, with the current life state
+	- a Kubernetes cluster that runs continuously monitoring the application that you have deployed
+	- compares the current life state of your application against the target desired state that is specified in the Git repository
+	- It will be constantly monitoring your applications state and it'll detect when it's out of sync with what's in the Git repo
+	- can optionally be configured to take corrective action automatically
+	- responsible for invoking any user-defined hooks for life cycle events
+
+
+You can interact with Argo CD using a web interface that is the UI or command line interface.
+
+Argo CD is built on top of Kubernetes and works with Kubernetes clusters. Any change we make to our Kubernetes manifest are deployed to Kubernetes.
+
