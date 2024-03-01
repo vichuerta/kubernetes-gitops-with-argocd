@@ -565,3 +565,28 @@ What is the status message that Argo CD displays when it finds that the live sta
     
     The live state is said to be out of sync with the desired state of the application if the live state does not match the state specified in Git.
 
+
+## 3. Configuring the Argo CD Application
+
+### Changing the Argo CD admin password
+
+When we installed Argo CD on our locally running Kubernetes cluster, we saw that Argo CD was configured with a default admin user and we access the password for that admin user using git "secret". This gives us the password for the admin user that Argo CD has set up. 
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" |
+ base64 -d && echo
+j1ijYUJ3fzlNL5C-
+```
+
+What if you want to change this password? We can do this using the Argo CD command line interface, and you can login to the command line by finding the "argocd login localhost:8080" command. When you run this command, go ahead and select, "yes." We want to accept the Argo CD certificate and specify the username and password for the admin user. Once you've logged in successfully as an administrator, you can go ahead and run the command to change and update your password. That's simply "argocd account update-password". You'll be prompted to enter the current password. We've already copied that. So I'm simply going to paste that in and then you'll be prompted for the new password. Make sure you specify a password that you will remember because this will be the password that you use to log into Argo CD from here on in. Once you've updated your password, let's head back to the Argo CD web interface and click on log out. This will take us back to the username, password screen. Specify admin as the username and the new password that you just set. Go ahead and sign in and you should be logged in successfully and you can see our simple internet server is still running. It's still in the same state.
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % argocd account update-password
+*** Enter password of currently logged in user (admin): 
+*** Enter new password for user admin: 
+*** Confirm new password for user admin: 
+Password updated
+Context 'localhost:8080' updated
+
+new pw : j1ijYUJ3fzlNL5C_
+```
