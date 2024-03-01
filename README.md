@@ -590,3 +590,17 @@ Context 'localhost:8080' updated
 
 new pw : j1ijYUJ3fzlNL5C_
 ```
+
+### Syncing updated infrastructure manifests
+
+We'll now see how we can make changes to our Kubernetes manifest, that we stored on GitHub, and have ArgoCD sync these changes for us. Let's see how many replicas of our deployment we're running, that's exactly one. 
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n default get replicaset
+NAME                          DESIRED   CURRENT   READY   AGE
+nginx-deployment-85d7bd697f   1         1         1       26m
+```
+
+The current state matches the desired state. 
+
+I'm now going to modify the deployment.yaml file, that I have on my local machine, to update the number of replicas that we have for our deployment. So open up deployment.yaml, and change the number of replicas. I've set it to be equal to two. Go ahead and save these changes. These changes are now made in the Git repository on our local machine. Let's now commit them to the master branch in GitHub. There's exactly one file that I've changed, deployment.yaml, which I add to Git, and I'm going to use git commit to commit the changes to my local repository. And once changes have been committed, I'm going to use git push to push these changes to the master branch in GitHub. Once changes have been pushed to the master branch of our repo, what this means is that the source of truth, that we have in GitHub, is now different from the state of our deployment in our Kubernetes cluster. The source of truth, here on GitHub, says that the number of replicas for our deployment should be equal to two, but, if you remember our application, our original deployment contained just one replica and this is why our ArgoCD application says OutOfSync. This OutOfSync message is a very clear indication that the infrastructure specification, in our connected repository, does not match the live deployment, and this is something that you might need to fix. Observe that ArgoCD has, very precisely, identified where exactly the mismatch lies between your desired state and the current state, it's in the nginx deployment. We've changed the number of replicas in this deployment. Let's take a look at the APP DIFF that will tell us the difference would be in the current state of the deployment and the desired state. Click on Compact diff to see a more compact representation, and you can see that the difference, here, lies in the number of replicas. We are now ready to use ArgoCD to sync up our application, so that the state of the application in GitHub matches the live state of the app. So you want to sync both the nginx service as well as the nginx deployment. Click on the Synchronize button, and ArgoCD will take care of the deployment for you. ArgoCD will make sure that the changes that you need to your manifest is reflected in the Kubernetes cluster. The change is in progress, and, in a few seconds, it'll change to healthy. And here you can see that the nginx deployment now contains two pods, which are replicas. Let's confirm that the number of replicas, for our nginx deployment, has been updated by getting the replica set in the default name space. And you can see here, nginx deployment is now at two replicas. That was the updated state based on our manifest.
