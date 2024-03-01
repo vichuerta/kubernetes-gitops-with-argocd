@@ -516,7 +516,7 @@ When you first install Argo CD services on a Kubernetes cluster why does the "ar
     
 - By default the Argo CD services do not allow access to the argocd command-line utility, special permissions have to be enabled to allow this.
 
-### Question 2 of 4
+#### Question 2 of 4
 
 How do you get the password to log into the Argo CD web user interface?
 
@@ -533,7 +533,7 @@ How do you get the password to log into the Argo CD web user interface?
 - The default admin password is always "password".
 
 
-### Question 3 of 4
+#### Question 3 of 4
 
 In order to deploy your infrastructure and application on the same cluster where you have Argo CD services running what cluster URL would you configure on your Argo CD application?
 
@@ -549,7 +549,7 @@ In order to deploy your infrastructure and application on the same cluster where
     
 - `https://127.0.0.1`
 
-### Question 4 of 4
+#### Question 4 of 4
 
 What is the status message that Argo CD displays when it finds that the live state of your deployment does not match the desired state stored in the Git repository?
 
@@ -652,3 +652,39 @@ So far, we've been manually syncing our Argo CD applications so that the live st
 Well, with these changes made, let's take a look at our application that's currently running and has two replicas corresponding to our engineer's deployment. Let's change this. In our terminal window I'm going to run kubectl scale and change the number of replicas to be equal to 3. Remember that self-heal forces the live state of the deployment to always match what we have in Git. So if you run, get all, you'll see that the third replica that was created is already in the terminating state. Essentially the Argo CD controller saw that we had changed the live state of our application manually. Thanks to the self healing configuration setting that we had enabled. The live state is now synced back to the state that we have in GitHub where number of replicas is equal to 2. Now let's make a change to our infrastructure manifest specification on GitHub. On my terminal window I'm going to edit the deployment.yaml file. We had set number of replicas to 2 I have now switched it back to 1. Save these changes on your local machine. And these are the changes that we commit to the head version of our GitHub repository. So go ahead and use Git add to add deployment.yaml and Git commit to commit these changes on our local machine. With this done, Git push will now push these changes to the master branch in GitHub. As soon as these changes are pushed to GitHub Argo CD will receive a web hook event indicating that manifests in Git have changed. If you hit refresh, you'll see that our automated sync has now kicked into action. Our application is currently out of sync, but Argo CD has automatically started the syncing process. Because we've enabled automated pruning along with enabling automated sync, any resources that have been deleted in GitHub will be deleted by Argo CD. So here is our extra replica, which is now in the terminating state. And in a matter of seconds, this will be terminated. Before we move on to the next set of demos, let's clean up after assess. I'm going to delete this Argo CD application click on the delete button and specify the name of the application that you want to delete. This is just a confirm delete dialogue to ensure that you don't inadvertently delete something that you want to keep. Wait for a few seconds and you will find that Argo CD slowly cleans up your infrastructure. Your pods will be turned down, your deployment and service will also be turned down. You can see that app health is now missing. Wait a little more, and your application will be deleted. And finally, we can start off on an empty slate when we move on to the next demo.
 
 `Applications > APP DETAILS > SYNC POLICY > ENABLE AUTO-SYNC > ENABLE PRUNE RESOURCES > ENABLE SELF HEAL`
+
+### Chapter 3 Quiz
+
+#### Question 1 of 2
+
+What does the setting auto-sync accomplish when you enable this for your Argo CD application?
+
+- When auto-sync is enabled Argo CD will delete your deployment if it finds that it receives no traffic.
+    
+- When auto-sync is enabled Argo CD will show you a warning when your live state does not match the desired state.
+    
+- When auto-sync is enabled Argo CD will automatically update the live state of the application to match the desired state without manual intervention.
+    
+    Correct ✅
+    
+    auto-sync enables syncing of deployments without explicit intervention from the release engineers.
+    
+- When auto-sync is enabled Argo CD will not delete resources which are no longer specified in your manifests.
+
+
+#### Question 2 of 2
+
+Which setting in Argo CD allows it to delete resources when you remove resources from your manifest specifications?
+
+- Enabling Prune Resources
+    
+    Correct ✅
+    
+    Argo CD does not delete resources when Prune Resources is disabled.
+    
+- Enabling Versioning Rollback
+    
+- Enabling Auto-Sync
+    
+- Enabling Delete Resources
+
