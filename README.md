@@ -498,3 +498,70 @@ Forwarding from 127.0.0.1:8081 -> 80
 Forwarding from [::1]:8081 -> 80
 ```
 
+### Chapter Quiz
+
+#### Question 1 of 4
+
+When you first install Argo CD services on a Kubernetes cluster why does the "argocd version" command display an error?
+
+- By default the Argo CD API Server running on the cluster is not exposed with an external IP address.
+    
+    Correct ✅
+    
+    The IP address type is `ClusterIP` by default, which means it is only visible internal to the cluster.
+    
+- By default the Argo CD services are not running and have to be explicitly run.
+    
+- By default argocd CLI commands require a special password before they can be executed.
+    
+- By default the Argo CD services do not allow access to the argocd command-line utility, special permissions have to be enabled to allow this.
+
+### Question 2 of 4
+
+How do you get the password to log into the Argo CD web user interface?
+
+- The default admin password is stored as a Kubernetes secret on the cluster where you are running Argo CD.
+    
+    Correct ✅
+    
+    You use kubectl to access the secret `argocd-initial-admin-secret` to get the default password.
+    
+- The default admin password is always the empty string.
+    
+- You need to explicitly update the password using the CLI before you can access the web user interface.
+    
+- The default admin password is always "password".
+
+
+### Question 3 of 4
+
+In order to deploy your infrastructure and application on the same cluster where you have Argo CD services running what cluster URL would you configure on your Argo CD application?
+
+- `https://kubernetes.default.svc`
+    
+    Correct ✅
+    
+    This is the URL to access the Kubernetes cluster on which Argo CD is deployed.
+    
+- `https://local.kubernetes.svc`
+    
+- `https://localhost/`
+    
+- `https://127.0.0.1`
+
+### Question 4 of 4
+
+What is the status message that Argo CD displays when it finds that the live state of your deployment does not match the desired state stored in the Git repository?
+
+- SyncRequired
+    
+- Unmatched
+    
+- NotMatching
+    
+- OutOfSync
+    
+    Correct ✅
+    
+    The live state is said to be out of sync with the desired state of the application if the live state does not match the state specified in Git.
+
