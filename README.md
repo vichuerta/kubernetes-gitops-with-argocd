@@ -461,3 +461,40 @@ Connect to repo using HTTPS using ArgCD UI and point to this repo: https://githu
 
 `Settings > Repositories > Connect Repo > Via HTTPS > Repository URL : https://github.com/vichuerta/kubernetes-gitops-with-argocd.git > Connect`
 
+### Deploying an application using Argo CD
+
+On the Argo CD web UI, go back to the page that says, "Manage your applications". We'll create a new Argo CD application that will allow us to deploy our application from GitHub. Click on the "New App" button here. And this will take you to a webpage where you set up the details for this application. We'll call our application "simple-nginx-server", because that's what it is. And the Argo CD project that we'll use for this application is the default project. We'll see how to create a new project and use that in a demo that follows. Accept the default options for all of the other settings. The sync policy here is manual, indicating that we'll manually sync any changes we make to our GitHub repo to our application. Scroll down below, and there is a space where you specify the repository URL. This is a repository that has been already connected to Argo CD and should be available in the dropdown options. The source of truth for our infrastructure specifications is whatever manifest definition is present at the head of this repo. We need to specify a sub-part within this repo, and that is the "nginx_yaml_files" folder. The application and the infrastructure that you're about to deploy is going to be in the same Kubernetes cluster, where we have Argo CD running. In this case, the destination that you specify for the application deployment is the local URL of the cluster, which is Kubernetes dot default dot service. And within the local cluster, we'll deploy our application to the default namespace. Remember Argo CD services are running in the Argo CD namespace. We can accept the default values for all of the other settings, scroll down to the bottom, and then click on the create button. This will set up a new Argo CD application for you. If you remember, we had specified that this application will be synced manually, which means when you first set up this application, it will be out of sync. So the current state of this application in the Kubernetes cluster does not match the desired state, which is present in git. You can see from this diagrammatic overview here that Argo CD has connected to our GitHub repo and picked up the exact specification of the infrastructure that we want to deploy on Kubernetes. Our simple nginx server contains a single service object, the "nginx-service" and a single deployment object, "nginx-deployment". When your application status says, "OutOfSync", you can click on "App Diff" to see what the current state of the running application is on Kubernetes and how it differs from the state specified in git, which is our source of truth. From this diff, you can see that git contains the specification of our application, which we want deployed on Kubernetes, but there is no application running on our Kubernetes cluster yet. We're now ready to deploy our application, using Argo CD. Click on "Sync" and Argo CD will synchronize the state of truth that is present in git with the state that we have in our Kubernetes cluster. It will go ahead and deploy our application, and match the nginx service and nginx deployment specifications that we have in our git repo. Click on, "Synchronize" and wait for a few seconds for your application to be synced. The application that we have deployed is fairly simple, and that's why it takes just a few seconds. A more complex deployment with many more services will take longer. Our app health is healthy and our status is synced. So the state in git matches the state of the infrastructure deployment on our Kubernetes cluster. So they are in sync. You can see that our nginx service and deployment is run on one port, be it specified replica is equal to one. The same state of the application can be viewed directly in our cluster. Do a "get all" in the before namespace. And you should see all of the services and deployments and replicas associated with our simple nginx server. Our nginx web server is running on port 80. So I'm going to set up port forwarding so that on port 8081, we can access our nginx service. I'm going to head back to my web browser and open up a new tab and hit "localhost:8081". And there you see it, our welcome to nginx web page. This is the basic nginx server that we've successfully deployed using Argo CD. This completes our first successful deployment. Go ahead and kill the port forwarding for this particular service. Before we move on to the next demo, make sure you leave the port forwarding on for the Argo CD user interface. We'll be needing that.
+
+Add new application on ArgoCD UI:
+
+`Applications > NEW APP > GENERAL > Application Name: simple-nginx-server > Project Name: default > SYNC POLICY > Manual > SOURCE > Repository URL: https://github.com/vichuerta/kubernetes-gitops-with-argocd.git > Revision: HEAD > Path: nginx_yaml_files > DESTINATION > Cluster URL: https://kubernetes.default.svc > Namespace: default > DIRECTORY (leave default values)`
+
+This application will show as `OutOfSync` by default you can use `APP DIFF` to view the drift of the application. 
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n default get all
+NAME                                    READY   STATUS    RESTARTS   AGE
+pod/nginx-deployment-85d7bd697f-m7k58   1/1     Running   0          63s
+
+NAME                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes      ClusterIP   10.43.0.1       <none>        443/TCP        3h16m
+service/nginx-service   NodePort    10.43.207.147   <none>        80:30829/TCP   63s
+
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx-deployment   1/1     1            1           63s
+
+NAME                                          DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-deployment-85d7bd697f   1         1         1       63s
+```
+
+you should see all of the services and deployments and replicas associated with our simple nginx server.
+
+
+Our nginx web server is running on port 80. So I'm going to set up port forwarding so that on port 8081, we can access our nginx service.
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl port-forward svc/nginx-service -n default 8081:80
+Forwarding from 127.0.0.1:8081 -> 80
+Forwarding from [::1]:8081 -> 80
+```
+
