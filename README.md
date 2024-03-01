@@ -604,3 +604,44 @@ nginx-deployment-85d7bd697f   1         1         1       26m
 The current state matches the desired state. 
 
 I'm now going to modify the deployment.yaml file, that I have on my local machine, to update the number of replicas that we have for our deployment. So open up deployment.yaml, and change the number of replicas. I've set it to be equal to two. Go ahead and save these changes. These changes are now made in the Git repository on our local machine. Let's now commit them to the master branch in GitHub. There's exactly one file that I've changed, deployment.yaml, which I add to Git, and I'm going to use git commit to commit the changes to my local repository. And once changes have been committed, I'm going to use git push to push these changes to the master branch in GitHub. Once changes have been pushed to the master branch of our repo, what this means is that the source of truth, that we have in GitHub, is now different from the state of our deployment in our Kubernetes cluster. The source of truth, here on GitHub, says that the number of replicas for our deployment should be equal to two, but, if you remember our application, our original deployment contained just one replica and this is why our ArgoCD application says OutOfSync. This OutOfSync message is a very clear indication that the infrastructure specification, in our connected repository, does not match the live deployment, and this is something that you might need to fix. Observe that ArgoCD has, very precisely, identified where exactly the mismatch lies between your desired state and the current state, it's in the nginx deployment. We've changed the number of replicas in this deployment. Let's take a look at the APP DIFF that will tell us the difference would be in the current state of the deployment and the desired state. Click on Compact diff to see a more compact representation, and you can see that the difference, here, lies in the number of replicas. We are now ready to use ArgoCD to sync up our application, so that the state of the application in GitHub matches the live state of the app. So you want to sync both the nginx service as well as the nginx deployment. Click on the Synchronize button, and ArgoCD will take care of the deployment for you. ArgoCD will make sure that the changes that you need to your manifest is reflected in the Kubernetes cluster. The change is in progress, and, in a few seconds, it'll change to healthy. And here you can see that the nginx deployment now contains two pods, which are replicas. Let's confirm that the number of replicas, for our nginx deployment, has been updated by getting the replica set in the default name space. And you can see here, nginx deployment is now at two replicas. That was the updated state based on our manifest.
+
+
+### Configuring deployments using kubectl
+
+Let's now see how Argo CD deals with the situation where you directly change the infrastructure that you've deployed for application using kubectl. Here, I use kubectl to change the number of replicas that I have for my nginx deployment to three. The Kubernetes manifests that I've checked into GitHub. Our source of truth states that our nginx deployment should have just two replicas. But now when you run "kubectl get all" you'll see that we have an additional replica. This is the replica that we've created directly on our Kubernetes cluster. So we use kubectl to set up this additional replica, which means when we go back to our Argo CD application, it tells us that our live state is not in sync with the source of truth, GitHub. Argo CD is very clear that it is a manifest specification corresponding to our nginx deployment that is out of sync. Our server specification is in sync. The deployment is out of sync. We have an additional replica. Click on "diff" here and you'll see the difference between the live manifest and the desired manifest. GitHub says the number of replica should be two, but our live manifest has three replicas. Let's say you want to ensure that your live deployment matches your GitHub status. Simply click on "sync" and Argo CD will get rid of the additional replica to make sure that your desired deployment state matches with the source of truth. That is GitHub. You can see that that extra replica that we have here is now in the terminating state. It'll be turned down and we'll be left with just two replicas for our nginx deployment. In under a minute, that extra replica that we had set up using kubectl will be terminated and our application state will go back to having two replicas for our deployment, matching our manifest specifications on GitHub.
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n default get replicaset             
+NAME                          DESIRED   CURRENT   READY   AGE
+nginx-deployment-85d7bd697f   2         2         2       31m
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl scale deploy nginx-deployment --replicas 3
+deployment.apps/nginx-deployment scaled
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl get all                  
+NAME                                    READY   STATUS    RESTARTS   AGE
+pod/nginx-deployment-85d7bd697f-m7k58   1/1     Running   0          32m
+pod/nginx-deployment-85d7bd697f-l7s7n   1/1     Running   0          2m50s
+pod/nginx-deployment-85d7bd697f-h4qq8   1/1     Running   0          56s
+
+NAME                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes      ClusterIP   10.43.0.1       <none>        443/TCP        3h47m
+service/nginx-service   NodePort    10.43.207.147   <none>        80:30829/TCP   32m
+
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx-deployment   3/3     3            3           32m
+
+NAME                                          DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-deployment-85d7bd697f   3         3         3       32m
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n default get replicaset
+NAME                          DESIRED   CURRENT   READY   AGE
+nginx-deployment-85d7bd697f   3         3         3       32m
+```
+
