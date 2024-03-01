@@ -459,5 +459,5 @@ The next step is to set up a git repository, where we'll store our Kubernetes ma
 
 Connect to repo using HTTPS using ArgCD UI and point to this repo: https://github.com/vichuerta/kubernetes-gitops-with-argocd.git
 
-
+`Settings > Repositories > Connect Repo > Via HTTPS > Repository URL : https://github.com/vichuerta/kubernetes-gitops-with-argocd.git > Connect`
 
