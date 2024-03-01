@@ -196,3 +196,213 @@ You can interact with Argo CD using a web interface that is the UI or command li
 
 Argo CD is built on top of Kubernetes and works with Kubernetes clusters. Any change we make to our Kubernetes manifest are deployed to Kubernetes.
 
+## 2. Working with Argo CD on a Local Kubernetes Cluster
+
+### Installing Argo CD services and the CLI
+
+We are now ready to install and run the Argo CD application on this cluster that we just created. The Argo CD application is a Kubernetes controller that manages the continuous delivery. "kubectl get namespace" shows me that there is a default namespace and a number of other Kubernetes-related namespaces. I'm going tocreate a new namespace called Argo CD. This is the namespace where the Argo CD services and application resources will live. "kubectl get namespace" shows us that the namespace has been successfully created. The specification for the Argo CD applications running on Kubernetes is present in a yaml file hosted on GitHub. So here is the install.yaml file. This is of type "CustomerResourceDefinition". This is the manifest for this CRB that defines the Kubernetes resources that we need to run Argo CD. Now this is auto-generated. You don't need to worry about what it contains, but you do need to know how to use it. Let's use "kubectl apply" to get Argo CD services running on our cluster. **By default this install.yaml file installs Argo CD in the Argo CD namespace. So if you want to change your namespace, you need to edit this install.yaml file.** Once the installation has been completed successfully, you can take a look at the deployment that Argo CD needs. I'm going to run "kubectl get deployment" in the Argo CD namespace, and you can see that there are four deployments. The argocd-server is the API server, which exposes the API consumed by the web user interface for Argo CD. The argocd-repo-server manages the GitHub repositories that we are connected to. The argocd-dex-server and the argocd-redis deployment manages an in-memory database that Argo CD uses. You can see that these deployments are not yet in the ready state. Next, let's take a look at the services installed by Argo CD using "kubectl argocd get service" and you can see that there are a number of different services that is a service for metrics. One thing to observe here is that none of the services have an external IP address. If you look at the service type, you'll see that every service exposes a cluster internal IP address. This makes each of these services only reachable from within the Kubernetes cluster, not externally. We've discussed that Argo CDs implemented as a Kubernetes controller, which continuously monitors running applications, to see whether they match the desired state. This Kubernetes controller is a statefulset object, the Argo CD application controller. Again, it's not yet ready. As we wait for the Argo CD services deployments and controllers to be ready, let's go ahead and install the command line interface for Argo CD. If you're not running on MacOS, Argo CD command line installation instructions are available here at this URL on argoproj.github.io. Once the command line has been installed, let's take a look at the Argo CD version that we are working with. Run "argocd version" and you can see that the version here is v2.0.3. This is the latest version at the time of this recording, but there seems to be an error here at the bottom that says "Argo CD server address unspecified." This is because, by default, the Argo CD API server, which the user interface will connect to, is not exposed with an external IP address. It only has an internal IP address. We'll fix this in just a bit. Let's take a look at the client version of Argo CD. That is our command line interface. And you can see that it's v2.0.3. There is no error here because we're not connecting to the API server to view the client version. Now that we have the client installed, let's quickly check to see whether the deployments and services are running. And here you can see, everything has the status "running". You're ready to use Argo CD.
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl get namespace
+NAME              STATUS   AGE
+kube-system       Active   59m
+default           Active   59m
+kube-public       Active   59m
+kube-node-lease   Active   59m
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl create namespace argocd
+namespace/argocd created
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl get namespace          
+NAME              STATUS   AGE
+kube-system       Active   64m
+default           Active   64m
+kube-public       Active   64m
+kube-node-lease   Active   64m
+argocd            Active   23s
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl apply --namespace argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+customresourcedefinition.apiextensions.k8s.io/applications.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/applicationsets.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/appprojects.argoproj.io created
+serviceaccount/argocd-application-controller created
+serviceaccount/argocd-applicationset-controller created
+serviceaccount/argocd-dex-server created
+serviceaccount/argocd-notifications-controller created
+serviceaccount/argocd-redis created
+serviceaccount/argocd-repo-server created
+serviceaccount/argocd-server created
+role.rbac.authorization.k8s.io/argocd-application-controller created
+role.rbac.authorization.k8s.io/argocd-applicationset-controller created
+role.rbac.authorization.k8s.io/argocd-dex-server created
+role.rbac.authorization.k8s.io/argocd-notifications-controller created
+role.rbac.authorization.k8s.io/argocd-server created
+clusterrole.rbac.authorization.k8s.io/argocd-application-controller created
+clusterrole.rbac.authorization.k8s.io/argocd-applicationset-controller created
+clusterrole.rbac.authorization.k8s.io/argocd-server created
+rolebinding.rbac.authorization.k8s.io/argocd-application-controller created
+rolebinding.rbac.authorization.k8s.io/argocd-applicationset-controller created
+rolebinding.rbac.authorization.k8s.io/argocd-dex-server created
+rolebinding.rbac.authorization.k8s.io/argocd-notifications-controller created
+rolebinding.rbac.authorization.k8s.io/argocd-server created
+clusterrolebinding.rbac.authorization.k8s.io/argocd-application-controller created
+clusterrolebinding.rbac.authorization.k8s.io/argocd-applicationset-controller created
+clusterrolebinding.rbac.authorization.k8s.io/argocd-server created
+configmap/argocd-cm created
+configmap/argocd-cmd-params-cm created
+configmap/argocd-gpg-keys-cm created
+configmap/argocd-notifications-cm created
+configmap/argocd-rbac-cm created
+configmap/argocd-ssh-known-hosts-cm created
+configmap/argocd-tls-certs-cm created
+secret/argocd-notifications-secret created
+secret/argocd-secret created
+service/argocd-applicationset-controller created
+service/argocd-dex-server created
+service/argocd-metrics created
+service/argocd-notifications-controller-metrics created
+service/argocd-redis created
+service/argocd-repo-server created
+service/argocd-server created
+service/argocd-server-metrics created
+deployment.apps/argocd-applicationset-controller created
+deployment.apps/argocd-dex-server created
+deployment.apps/argocd-notifications-controller created
+deployment.apps/argocd-redis created
+deployment.apps/argocd-repo-server created
+deployment.apps/argocd-server created
+statefulset.apps/argocd-application-controller created
+networkpolicy.networking.k8s.io/argocd-application-controller-network-policy created
+networkpolicy.networking.k8s.io/argocd-applicationset-controller-network-policy created
+networkpolicy.networking.k8s.io/argocd-dex-server-network-policy created
+networkpolicy.networking.k8s.io/argocd-notifications-controller-network-policy created
+networkpolicy.networking.k8s.io/argocd-redis-network-policy created
+networkpolicy.networking.k8s.io/argocd-repo-server-network-policy created
+networkpolicy.networking.k8s.io/argocd-server-network-policy created
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl --namespace argocd get deployment         
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+argocd-redis                       1/1     1            1           104s
+argocd-applicationset-controller   1/1     1            1           104s
+argocd-notifications-controller    1/1     1            1           104s
+argocd-dex-server                  1/1     1            1           104s
+argocd-repo-server                 1/1     1            1           104s
+argocd-server                      1/1     1            1           104s
+```
+
+The `argocd-server` is the API server, which exposes the API consumed by the web user interface for Argo CD. The `argocd-repo-server` manages the GitHub repositories that we are connected to. The `argocd-dex-server` and the `argocd-redis` deployment manages an in-memory database that Argo CD uses. You can see that these deployments are not yet in the ready state.
+
+The `argocd-applicationset-controller` ApplicationSet controller is a [Kubernetes controller](https://kubernetes.io/docs/concepts/architecture/controller/) that adds support for an `ApplicationSet` [CustomResourceDefinition](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) (CRD). This controller/CRD enables both automation and greater flexibility managing [Argo CD](https://argo-cd.readthedocs.io/en/stable/) Applications across a large number of clusters and within monorepos, plus it makes self-service usage possible on multitenant Kubernetes clusters.
+
+Argo CD Notifications continuously monitors Argo CD applications and provides a flexible way to notify users about important changes in the application state. Using a flexible mechanism of [triggers](https://argo-cd.readthedocs.io/en/latest/operator-manual/notifications/triggers/) and [templates](https://argo-cd.readthedocs.io/en/latest/operator-manual/notifications/templates/) you can configure when the notification should be sent as well as notification content. Argo CD Notifications includes the [catalog](https://argo-cd.readthedocs.io/en/latest/operator-manual/notifications/catalog/) of useful triggers and templates. So you can just use them instead of reinventing new ones.
+
+Next, let's take a look at the services installed by Argo CD
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl --namespace argocd get service
+NAME                                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+argocd-applicationset-controller          ClusterIP   10.43.102.157   <none>        7000/TCP,8080/TCP            23m
+argocd-dex-server                         ClusterIP   10.43.37.135    <none>        5556/TCP,5557/TCP,5558/TCP   23m
+argocd-metrics                            ClusterIP   10.43.29.4      <none>        8082/TCP                     23m
+argocd-notifications-controller-metrics   ClusterIP   10.43.53.231    <none>        9001/TCP                     23m
+argocd-redis                              ClusterIP   10.43.149.191   <none>        6379/TCP                     23m
+argocd-repo-server                        ClusterIP   10.43.51.146    <none>        8081/TCP,8084/TCP            23m
+argocd-server                             ClusterIP   10.43.231.39    <none>        80/TCP,443/TCP               23m
+argocd-server-metrics                     ClusterIP   10.43.218.83    <none>        8083/TCP                     23m
+```
+
+One thing to observe here is that none of the services have an external IP address. If you look at the service type, you'll see that every service exposes a cluster internal IP address. This makes each of these services only reachable from within the Kubernetes cluster, not externally.
+
+We've discussed that Argo CDs implemented as a Kubernetes controller, which continuously monitors running applications, to see whether they match the desired state. This Kubernetes controller is a statefulset object, the Argo CD application controller.
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n argocd get statefulset
+NAME                            READY   AGE
+argocd-application-controller   1/1     66m
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % brew install argocd
+```
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % argocd version
+argocd: v2.10.1+a79e0ea.dirty
+  BuildDate: 2024-02-14T22:23:04Z
+  GitCommit: a79e0eaca415461dc36615470cecc25d6d38cefb
+  GitTreeState: dirty
+  GoVersion: go1.21.7
+  Compiler: gc
+  Platform: darwin/arm64
+FATA[0000] Argo CD server address unspecified           
+```
+
+there seems to be an error here at the bottom that says "Argo CD server address unspecified." This is because, by default, the Argo CD API server, which the user interface will connect to, is not exposed with an external IP address. It only has an internal IP address.
+
+
+Let's take a look at the client version of Argo CD. That is our command line interface. And you 
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % argocd version --client
+argocd: v2.10.1+a79e0ea.dirty
+  BuildDate: 2024-02-14T22:23:04Z
+  GitCommit: a79e0eaca415461dc36615470cecc25d6d38cefb
+  GitTreeState: dirty
+  GoVersion: go1.21.7
+  Compiler: gc
+  Platform: darwin/arm64
+```
+
+can see that it's v2.0.3. There is no error here because we're not connecting to the API server to view the client version. 
+
+Now that we have the client installed, let's quickly check to see whether the deployments and services are running. 
+
+```bash
+victorhuerta@Victors-MacBook-Pro kubernetes-gitops-with-argocd % kubectl -n argocd get all
+NAME                                                    READY   STATUS    RESTARTS   AGE
+pod/argocd-redis-69f8795dbd-4g4ql                       1/1     Running   0          78m
+pod/argocd-applicationset-controller-596997cb6d-gjgmd   1/1     Running   0          78m
+pod/argocd-notifications-controller-5c4c876d56-47zrj    1/1     Running   0          78m
+pod/argocd-dex-server-c8cb9bd99-vjdt4                   1/1     Running   0          78m
+pod/argocd-repo-server-c8f5bd5c5-d8cmc                  1/1     Running   0          78m
+pod/argocd-application-controller-0                     1/1     Running   0          78m
+pod/argocd-server-6bdd44685d-jcr98                      1/1     Running   0          78m
+
+NAME                                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+service/argocd-applicationset-controller          ClusterIP   10.43.102.157   <none>        7000/TCP,8080/TCP            78m
+service/argocd-dex-server                         ClusterIP   10.43.37.135    <none>        5556/TCP,5557/TCP,5558/TCP   78m
+service/argocd-metrics                            ClusterIP   10.43.29.4      <none>        8082/TCP                     78m
+service/argocd-notifications-controller-metrics   ClusterIP   10.43.53.231    <none>        9001/TCP                     78m
+service/argocd-redis                              ClusterIP   10.43.149.191   <none>        6379/TCP                     78m
+service/argocd-repo-server                        ClusterIP   10.43.51.146    <none>        8081/TCP,8084/TCP            78m
+service/argocd-server                             ClusterIP   10.43.231.39    <none>        80/TCP,443/TCP               78m
+service/argocd-server-metrics                     ClusterIP   10.43.218.83    <none>        8083/TCP                     78m
+
+NAME                                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/argocd-redis                       1/1     1            1           78m
+deployment.apps/argocd-applicationset-controller   1/1     1            1           78m
+deployment.apps/argocd-notifications-controller    1/1     1            1           78m
+deployment.apps/argocd-dex-server                  1/1     1            1           78m
+deployment.apps/argocd-repo-server                 1/1     1            1           78m
+deployment.apps/argocd-server                      1/1     1            1           78m
+
+NAME                                                          DESIRED   CURRENT   READY   AGE
+replicaset.apps/argocd-redis-69f8795dbd                       1         1         1       78m
+replicaset.apps/argocd-applicationset-controller-596997cb6d   1         1         1       78m
+replicaset.apps/argocd-notifications-controller-5c4c876d56    1         1         1       78m
+replicaset.apps/argocd-dex-server-c8cb9bd99                   1         1         1       78m
+replicaset.apps/argocd-repo-server-c8f5bd5c5                  1         1         1       78m
+replicaset.apps/argocd-server-6bdd44685d                      1         1         1       78m
+
+NAME                                             READY   AGE
+statefulset.apps/argocd-application-controller   1/1     78m
+```
+
+And here you can see, everything has the status "running". You're ready to use Argo CD.
